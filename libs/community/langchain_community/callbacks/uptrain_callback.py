@@ -37,6 +37,7 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
             self,
             checks,
             project_name: Optional[str] = None,
+            retrieval = False
             ) -> None:
         """Initializes the `UpTrainCallbackHandler`."""
         super().__init__()
@@ -49,7 +50,7 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
         # Set uptrain variables
         self.project_name = project_name
         self.checks = checks
-
+        self.retrieval_flag = retrieval
         # Set up uptrain settings
         # self.uptrain_settings = Settings(
         #     uptrain_access_token=os.environ["UPTRAIN_API_KEY"],
@@ -61,7 +62,10 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
         self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
     ) -> None:
         """Store the prompts"""
-        self.prompts = prompts
+        if(self.retrieval_flag == False):
+            self.prompts = prompts
+        else:
+            self.context = prompts
 
     def on_llm_new_token(self, token: str, **kwargs: Any) -> None:
         """Do nothing when a new token is generated."""
@@ -69,21 +73,23 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
 
     def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
         """Log records to uptrain when an LLM ends."""
-        from uptrain import APIClient, Evals
         
-        data = [] 
-        len_queries = len(self.prompts)
-        for i in range(len_queries):
-            data.append({'question':self.prompts[i],'response':response.generations[i].text})
+        if(self.retrieval_flag == False):
+            from uptrain import APIClient, Evals
+            
+            data = [] 
+            len_queries = len(self.prompts)
+            for i in range(len_queries):
+                data.append({'question':self.prompts[i],'response':response.generations[i].text})
 
-        UPTRAIN_API_KEY = 'add uptrain api key'
-        client = APIClient(uptrain_api_key=UPTRAIN_API_KEY)
-        results = client.log_and_evaluate(
-            project_name= self.project_name,
-            data=data,
-            checks=[Evals.RESPONSE_RELEVANCE]
-        )
-
+            UPTRAIN_API_KEY = 'add uptrain api key'
+            client = APIClient(uptrain_api_key=UPTRAIN_API_KEY)
+            results = client.log_and_evaluate(
+                project_name= self.project_name,
+                data=data,
+                checks=[Evals.RESPONSE_RELEVANCE]
+            )
+        
     def on_llm_error(
         self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any
     ) -> None:
@@ -93,13 +99,25 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
     def on_chain_start(
         self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
     ) -> None:
+        self.prompts = inputs
         """Do nothing when chain starts"""
         pass
 
     def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> None:
         """Do nothing when chain ends."""
-        pass
+        from uptrain import APIClient, Evals
+        data = [] 
+        len_queries = len(self.prompts)
+        for i in range(len_queries):
+            data.append({'question':self.prompts[i],'context':self.context[i],'response':outputs.generations[i].text})
 
+        UPTRAIN_API_KEY = 'add uptrain api key'
+        client = APIClient(uptrain_api_key=UPTRAIN_API_KEY)
+        results = client.log_and_evaluate(
+            project_name= self.project_name,
+            data=data,
+            checks=[Evals.RESPONSE_RELEVANCE]
+        )
     def on_chain_error(
         self, error: Union[Exception, KeyboardInterrupt], **kwargs: Any
     ) -> None:
