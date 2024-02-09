@@ -5,4 +5,3 @@ from langchain_community.callbacks.uptrain_callback import (
 __all__ = [
     "UpTrainCallbackHandler",
 ]
-

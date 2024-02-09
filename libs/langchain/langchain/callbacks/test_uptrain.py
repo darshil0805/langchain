@@ -1,14 +1,6 @@
 import sys
-#sys.path.append('/Users/darshiljariwala/Desktop/langchain/libs/langchain/langchain/callbacks')
-print(sys.path)
-#from langchain.callbacks import TrubricsCallbackHandler
-from langchain.llms import OpenAI
-from langchain.callbacks import UpTrainCallbackHandler
-
-#from uptrain.operators import LanguageCritique, ResponseCompleteness, ResponseRelevance
-
-# language_critique = LanguageCritique()
-# response_completeness = ResponseCompleteness()
+from langchain_openai import OpenAI
+from langchain.callbacks.uptrain_callback import UpTrainCallbackHandler
 
 uptrain_callback = UpTrainCallbackHandler(
  checks = []
@@ -18,7 +10,7 @@ llm = OpenAI(
  temperature=0,
  callbacks=[uptrain_callback],
  verbose=True,
- openai_api_key = "add openai api key"
+ openai_api_key = "sk-*******" # Add your openai api key
 )
 
 response = llm.generate([
