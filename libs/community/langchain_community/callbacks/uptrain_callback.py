@@ -36,7 +36,7 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
     def __init__(
             self,
             checks,
-            project_name: Optional[str] = None,
+            project_name: str = "langchain",
             retrieval = False
             ) -> None:
         """Initializes the `UpTrainCallbackHandler`."""
@@ -62,7 +62,7 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
         self, serialized: Dict[str, Any], prompts: List[str], **kwargs: Any
     ) -> None:
         """Store the prompts"""
-        if(self.retrieval_flag == False):
+        if(self.retrieval_flag is False):
             self.prompts = prompts
         else:
             self.context = prompts
@@ -74,15 +74,15 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
     def on_llm_end(self, response: LLMResult, **kwargs: Any) -> None:
         """Log records to uptrain when an LLM ends."""
         
-        if(self.retrieval_flag == False):
+        if(self.retrieval_flag is False):
             from uptrain import APIClient, Evals
             
-            data = [] 
+            data = []
             len_queries = len(self.prompts)
             for i in range(len_queries):
-                data.append({'question':self.prompts[i],'response':response.generations[i].text})
+                data.append({'question':self.prompts[i],'response':response.generations[i][0].text})
 
-            UPTRAIN_API_KEY = 'add uptrain api key'
+            UPTRAIN_API_KEY = "up-**********"  # Add your uptrain api key
             client = APIClient(uptrain_api_key=UPTRAIN_API_KEY)
             results = client.log_and_evaluate(
                 project_name= self.project_name,
@@ -111,7 +111,7 @@ class UpTrainCallbackHandler(BaseCallbackHandler):
         for i in range(len_queries):
             data.append({'question':self.prompts[i],'context':self.context[i],'response':outputs.generations[i].text})
 
-        UPTRAIN_API_KEY = 'add uptrain api key'
+        UPTRAIN_API_KEY = "up-********************"  # Add your uptrain api key
         client = APIClient(uptrain_api_key=UPTRAIN_API_KEY)
         results = client.log_and_evaluate(
             project_name= self.project_name,
